@@ -6,20 +6,29 @@ using System.Threading.Tasks;
 
 namespace LAB2TA
 {
+
     public class HashTable<TKey, TValue>
     {
         private LinkedList<Tuple<TKey, TValue>>[] _items;
-        private int _fillFactor = 3;
-        private int _size;
+        private int _fillFactor = 1;
+        private int _size = 4;
+        private int _elements;
+        public int count = 0;
 
         public HashTable()
         {
             _items = new LinkedList<Tuple<TKey, TValue>>[4];
         }
 
+        private HashTable(int length)
+        {
+            _items = new LinkedList<Tuple<TKey, TValue>>[length];
+            _size = length;
+        }
+
         public void Add(TKey key, TValue value)
         {
-            var pos = GetPosition(key, _items.Length);
+            var pos = GetPosition(key);
             if (_items[pos] == null)
             {
                 _items[pos] = new LinkedList<Tuple<TKey, TValue>>();
@@ -28,12 +37,12 @@ namespace LAB2TA
             {
                 throw new Exception("Duplicate key, cannot insert.");
             }
-            _size++;
+            _elements++;
             if (NeedToGrow())
             {
                 GrowAndReHash();
             }
-            pos = GetPosition(key, _items.Length);
+            pos = GetPosition(key);
             if (_items[pos] == null)
             {
                 _items[pos] = new LinkedList<Tuple<TKey, TValue>>();
@@ -43,13 +52,13 @@ namespace LAB2TA
 
         public void Remove(TKey key)
         {
-            var pos = GetPosition(key, _items.Length);
+            var pos = GetPosition(key);
             if (_items[pos] != null)
             {
                 var objToRemove = _items[pos].FirstOrDefault(item => item.Item1.Equals(key));
                 if (objToRemove == null) return;
                 _items[pos].Remove(objToRemove);
-                _size--;
+                _elements--;
             }
             else
             {
@@ -59,34 +68,36 @@ namespace LAB2TA
 
         public TValue Get(TKey key)
         {
-            var pos = GetPosition(key, _items.Length);
-            foreach (var item in _items[pos].Where(item => item.Item1.Equals(key)))
+            var pos = GetPosition(key);
+            //foreach (var item in _items[pos].Where(item => item.Item1.Equals(key)))
+            //{
+            //    return item.Item2;
+            //}
+            for (int i = 0; i < _items[pos].Count; i++)
             {
-                return item.Item2;
+                count++;
+                if (_items[pos].ElementAt(i).Item1.Equals(key))
+                    return _items[pos].ElementAt(i).Item2;
             }
+
             throw new Exception("Key does not exist in HashTable.");
         }
 
         private void GrowAndReHash()
         {
-            _fillFactor *= 2;
-            var newItems = new LinkedList<Tuple<TKey, TValue>>[_items.Length * 2];
+            _size = _size * 2;
+            var newHashTable = new HashTable<TKey, TValue>(_size);
             foreach (var item in _items.Where(x => x != null))
             {
                 foreach (var value in item)
                 {
-                    var pos = GetPosition(value.Item1, newItems.Length);
-                    if (newItems[pos] == null)
-                    {
-                        newItems[pos] = new LinkedList<Tuple<TKey, TValue>>();
-                    }
-                    newItems[pos].AddFirst(new Tuple<TKey, TValue>(value.Item1, value.Item2));
+                    newHashTable.Add(value.Item1, value.Item2);
                 }
             }
-            _items = newItems;
+            _items = newHashTable._items;
         }
 
-        private int GetPosition(TKey key, int length)
+        public int GetPosition(TKey key)
         {
             var hash = key.GetHashCode();
             var pos = Math.Abs(hash);
@@ -96,7 +107,7 @@ namespace LAB2TA
 
         private bool NeedToGrow()
         {
-            return _size >= _fillFactor;
+            return _elements/_size >= _fillFactor;
         }
     }
 
@@ -132,14 +143,18 @@ namespace LAB2TA
         {
             var hashTable = new HashTable<int, string>();
             hashTable.Add(21037, "Pirogova");
-            int elements = 10;
+            int elements = 100;
             for (int i = 0; i < elements; i++)
             {
-                var element = RandElement(8);
-                hashTable.Add(i, element);
+                var element = RandElement(100);
+                hashTable.Add(element.GetHashCode(), element);
             }
 
-            Console.WriteLine(hashTable.Get(10));
+            Console.WriteLine("Number of elements: " + elements);
+            Console.WriteLine("Insert Key to find: 21037");
+            Console.WriteLine("Value with key 21037:" + hashTable.Get(21037));
+            Console.WriteLine("Number of hits: " + 1);
+            Console.WriteLine("Number of comparisons: " + hashTable.count);
             Console.ReadLine();
         }
     }
